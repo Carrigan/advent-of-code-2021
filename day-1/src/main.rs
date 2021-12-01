@@ -10,8 +10,9 @@ struct Average<I: Iterator<Item = u32>> {
 impl <I: Iterator<Item = u32>> Average <I> {
     fn new(mut iterator: I) -> Average<I> {
         let first = 0;
-        let second = iterator.next().unwrap();
-        let third = iterator.next().unwrap();
+        let error = "Running average iterator must start with at least two items";
+        let second = iterator.next().expect(error);
+        let third = iterator.next().expect(error);
         
         Average { iterator, first, second, third }
     }
@@ -34,16 +35,16 @@ impl <I: Iterator<Item = u32>> Iterator for Average <I> {
 fn read_input(path: &str) -> Vec<u32> {
     let mut numbers: Vec<u32> = Vec::new();
 
-    let input = fs::read_to_string(path).unwrap();
+    let input = fs::read_to_string(path).expect("File path must be valid");
     for entry in input.lines() {
-        numbers.push(entry.parse::<u32>().unwrap());
+        numbers.push(entry.parse::<u32>().expect("Lines must be parsable to u32"));
     }
     
     numbers
 }
 
 fn count_increases<I: Iterator<Item = u32>>(mut number_list: I) -> u32 {
-    let mut last_value = number_list.next().unwrap();
+    let mut last_value = number_list.next().expect("Increase list must be at least 2 values long");
     
     number_list.fold(0, |acc, item| {
         let current_last_val = last_value;
