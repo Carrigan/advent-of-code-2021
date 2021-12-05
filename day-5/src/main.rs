@@ -13,8 +13,26 @@ impl Line {
         !((self.x1 == self.x2) || (self.y1 == self.y2))
     }
 
-    // Not for horizontals
     fn contains(&self, x: u32, y: u32) -> bool {
+        match self.horizontal() {
+            true => self.contains_horizontal(x, y),
+            false => self.contains_vert_hor(x, y)
+        }
+    }
+
+    fn contains_horizontal(&self, x: u32, y: u32) -> bool {
+        let left = if self.x1 < self.x2 { (self.x1, self.y1) } else { (self.x2, self.y2) };
+        let right = if self.x1 < self.x2 { (self.x2, self.y2) } else { (self.x1, self.y1) };
+        let y_mult: i32 = if left.1 < right.1 { 1 } else { -1 };
+
+        (left.0..=right.0).enumerate().any(|(i, line_x)| {
+            let line_y = (left.1 as i32 + (y_mult * i as i32)) as u32;
+
+            line_x == x && line_y == y
+        })
+    }
+
+    fn contains_vert_hor(&self, x: u32, y: u32) -> bool {
         let lower_x = *[self.x1, self.x2].iter().min().unwrap();
         let upper_x = *[self.x1, self.x2].iter().max().unwrap();
         let lower_y = *[self.y1, self.y2].iter().min().unwrap();
@@ -61,14 +79,22 @@ fn read_input(path: &str) -> Vec<Line> {
         .collect()
 }
 
-fn run_part_one(lines: &Vec<Line>, (x_min, y_min, x_max, y_max): (u32, u32, u32, u32)) -> u32 {
+fn run_part_one(lines: &Vec<Line>, bounds: (u32, u32, u32, u32)) -> u32 {
+    count_vents(lines, bounds, false)
+}
+
+fn run_part_two(lines: &Vec<Line>, bounds: (u32, u32, u32, u32)) -> u32 {
+    count_vents(lines, bounds, true)
+}
+
+fn count_vents(lines: &Vec<Line>, (x_min, y_min, x_max, y_max): (u32, u32, u32, u32), process_all: bool) -> u32 {
     (y_min..=y_max)
         .map(|y|
             (x_min..=x_max)
                 .filter(|&x|
                     lines
                         .iter()
-                        .filter(|line| !line.horizontal() && line.contains(x, y))
+                        .filter(|line| (process_all || !line.horizontal()) && line.contains(x, y))
                         .count() > 1
                 )
                 .count() as u32
@@ -80,6 +106,7 @@ fn main() {
     let lines = read_input("input");
     let bounds = find_puzzle_bounds(&lines);
     println!("Day 5 Part 1: {}", run_part_one(&lines, bounds));
+    println!("Day 5 Part 2: {}", run_part_two(&lines, bounds));
 }
 
 #[test]
@@ -87,4 +114,11 @@ fn test_part_one() {
     let lines = read_input("test");
     let bounds = find_puzzle_bounds(&lines);
     assert_eq!(5, run_part_one(&lines, bounds));
+}
+
+#[test]
+fn test_part_two() {
+    let lines = read_input("test");
+    let bounds = find_puzzle_bounds(&lines);
+    assert_eq!(12, run_part_two(&lines, bounds));
 }
