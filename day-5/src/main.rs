@@ -23,13 +23,14 @@ impl Line {
     fn contains_horizontal(&self, x: u32, y: u32) -> bool {
         let left = if self.x1 < self.x2 { (self.x1, self.y1) } else { (self.x2, self.y2) };
         let right = if self.x1 < self.x2 { (self.x2, self.y2) } else { (self.x1, self.y1) };
+
+        if x < left.0 || x > right.0 { return false; }
+
+        let x_diff = x - left.0;
+        let y_diff: i32 = y as i32 - left.1 as i32;
         let y_mult: i32 = if left.1 < right.1 { 1 } else { -1 };
 
-        (left.0..=right.0).enumerate().any(|(i, line_x)| {
-            let line_y = (left.1 as i32 + (y_mult * i as i32)) as u32;
-
-            line_x == x && line_y == y
-        })
+        x_diff as i32 == (y_diff * y_mult)
     }
 
     fn contains_vert_hor(&self, x: u32, y: u32) -> bool {
