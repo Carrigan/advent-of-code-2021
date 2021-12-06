@@ -1,15 +1,17 @@
 use std::fs;
 
-fn iterate(fish: Vec<u8>) -> Vec<u8> {
-    let mut add_count = 0;
-    let mut new_fish: Vec<u8> = fish
-        .iter()
-        .map(|&n| if n == 0 { add_count += 1; 6 } else { n - 1 })
-        .collect();
+fn iterate_n(fish: &Vec<u8>, n: usize) -> usize {
+    let mut counts = [0; 9];
+    for f in fish.iter() { counts[*f as usize] += 1; }
 
-    (0..add_count).for_each(|_| new_fish.push(8));
+    for _ in 0..n {
+        let zeroes = counts[0];
+        for x in 0..8 { counts[x] = counts[x + 1]; }
+        counts[6] += zeroes;
+        counts[8] = zeroes;
+    }
 
-    new_fish
+    counts.iter().sum()
 }
 
 fn read_input(path: &str) -> Vec<u8> {
@@ -22,14 +24,19 @@ fn read_input(path: &str) -> Vec<u8> {
 }
 
 fn main() {
-    let mut fish = read_input("input");
-    for _ in 0..80 { fish = iterate(fish); };
-    println!("Day 6 Part 1: {}", fish.len());
+    let fish = read_input("input");
+    println!("Day 6 Part 1: {}", iterate_n(&fish, 80));
+    println!("Day 6 Part 2: {}", iterate_n(&fish, 256));
 }
 
 #[test]
 fn test_part_one() {
-    let mut fish = read_input("test");
-    for _ in 0..80 { fish = iterate(fish); };
-    assert_eq!(fish.len(), 5934);
+    let fish = read_input("test");
+    assert_eq!(iterate_n(&fish, 80), 5934);
+}
+
+#[test]
+fn test_part_two() {
+    let fish = read_input("test");
+    assert_eq!(iterate_n(&fish, 256), 26984457539);
 }
