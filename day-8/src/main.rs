@@ -7,12 +7,21 @@ fn read_input(path: &str) -> Vec<(Vec<String>, Vec<String>)> {
         .lines()
         .fold(Vec::new(), |mut acc, line| {
             let mut split = line.split("|");
-            let signals = split.next().unwrap().trim().split(" ").map(str::to_string).collect();
-            let outputs = split.next().unwrap().trim().split(" ").map(str::to_string).collect();
-            acc.push((signals, outputs));
+
+            acc.push((
+                split.next().unwrap().trim().split(" ").map(str::to_string).collect(),
+                split.next().unwrap().trim().split(" ").map(str::to_string).collect()
+            ));
 
             acc
         })
+}
+
+fn distinguishable_by_length(digit: &&String) -> bool {
+    match digit.len() {
+        2 | 3 | 4 | 7 => true,
+        _ => false
+    }
 }
 
 fn part_one_count(entries: &Vec<(Vec<String>, Vec<String>)>) -> usize {
@@ -21,12 +30,7 @@ fn part_one_count(entries: &Vec<(Vec<String>, Vec<String>)>) -> usize {
         .map(|(_signals, outputs)| {
             outputs
                 .iter()
-                .filter(|out|
-                    match out.len() {
-                        2 | 3 | 4 | 7 => true,
-                        _ => false
-                    }
-                )
+                .filter(distinguishable_by_length)
                 .count()
         })
         .sum()
@@ -124,10 +128,7 @@ fn apply_mappings(mappings: &HashMap<char, char>, output: &String) -> usize {
 }
 
 fn part_two(entries: &Vec<(Vec<String>, Vec<String>)>) -> usize {
-    entries
-        .iter()
-        .map(|entry| decode_entry(entry))
-        .sum()
+    entries.iter().map(decode_entry).sum()
 }
 
 fn main() {
