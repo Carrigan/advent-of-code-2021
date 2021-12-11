@@ -49,13 +49,26 @@ fn part_one(state: &mut Vec<usize>) -> usize {
         .sum()
 }
 
+fn part_two(state: &mut Vec<usize>) -> usize {
+    (0..10000 as usize)
+        .find(|_| step(state) == 100)
+        .unwrap() + 1
+}
+
 fn main() {
     let input = read_input("input");
     println!("Day 11 Part 1: {}", part_one(&mut input.clone()));
+    println!("Day 11 Part 2: {}", part_two(&mut input.clone()));
 }
 
 #[test]
 fn test_part_one() {
     let input = read_input("test");
     assert_eq!(part_one(&mut input.clone()), 1656);
+}
+
+#[test]
+fn test_part_two() {
+    let input = read_input("test");
+    assert_eq!(part_two(&mut input.clone()), 195);
 }
