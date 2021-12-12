@@ -7,8 +7,9 @@ struct Edge {
 }
 
 
-struct Path {
-    nodes: Vec<String>,
+struct Node {
+    name: String,
+    parent: Option<usize>,
     small_visited_twice: bool
 }
 
@@ -26,63 +27,88 @@ fn read_input(path: &str) -> Vec<Edge> {
         .collect()
 }
 
+struct PathIterator<'a> {
+    node_index: Option<usize>,
+    nodes: &'a Vec<Node>
+}
+
+impl <'a> Iterator for PathIterator<'a> {
+    type Item = &'a String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_node = &self.nodes[self.node_index?];
+        self.node_index = current_node.parent;
+
+        Some(&current_node.name)
+    }
+}
+
 fn is_small_cave(cave: &str) -> bool {
     cave.chars().all(|c| match c { 'a'..='z' => true, _ => false })
 }
 
-fn validate_path(node: &String, path: &Path, can_visit_small_cave_twice: bool) -> bool {
-    if node == "start" { return false; }
-    if !is_small_cave(node) { return true; }
-    if can_visit_small_cave_twice && !path.small_visited_twice { return true; }
+fn validate_node(node_name: &String, nodes: &Vec<Node>, node_index: usize, can_visit_small_cave_twice: bool) -> bool {
+    if node_name == "start" { return false; }
+    if !is_small_cave(node_name) { return true; }
 
-    !path.nodes.contains(node)
+    let last_node = &nodes[node_index];
+    if can_visit_small_cave_twice && !last_node.small_visited_twice { return true; }
+
+    !PathIterator { nodes, node_index: Some(node_index) }.any(|path_node| path_node == node_name)
 }
 
-fn permutate_path(edges: &Vec<Edge>, path: &Path, can_visit_small_cave_twice: bool) -> Vec<Path> {
-    let last_visit = path.nodes.last().unwrap();
+fn permutate_path(edges: &Vec<Edge>, nodes: &Vec<Node>, node_index: usize, can_visit_small_cave_twice: bool) -> Vec<Node> {
+    let last_visit = &nodes[node_index];
 
     edges
         .iter()
         .filter_map(|edge| {
             match (&edge.point_one, &edge.point_two) {
-                (_lv, next_visit) if _lv == last_visit => Some(next_visit),
-                (next_visit, _lv) if _lv == last_visit=> Some(next_visit),
+                (_lv, next_visit) if _lv == &last_visit.name => Some(next_visit),
+                (next_visit, _lv) if _lv == &last_visit.name => Some(next_visit),
                 _ => None
             }
         })
-        .filter(|node| validate_path(node, path, can_visit_small_cave_twice))
+        .filter(|node_name| validate_node(node_name, nodes, node_index, can_visit_small_cave_twice))
         .map(|node| {
-            let mut new_path = path.nodes.clone();
-            new_path.push(node.clone());
+            let mut small_visited_twice = last_visit.small_visited_twice;
 
-            let mut small_visited_twice = path.small_visited_twice;
             if can_visit_small_cave_twice && !small_visited_twice {
-                small_visited_twice = is_small_cave(node) && new_path.iter().filter(|&n| n == node).count() == 2;
+                small_visited_twice = is_small_cave(node) && PathIterator { nodes, node_index: Some(node_index) }.any(|n| n == node);
             }
 
-            Path { nodes: new_path, small_visited_twice: path.small_visited_twice || small_visited_twice }
+            Node {
+                name: node.clone(),
+                parent: Some(node_index),
+                small_visited_twice
+            }
         })
         .collect()
 }
 
 fn traverse_cave(edges: &Vec<Edge>, can_visit_small_cave_twice: bool) -> usize {
-    let initial_path = Path { nodes: vec!("start".to_string()), small_visited_twice: false };
-    let mut paths_in_progress = vec!(initial_path);
-    let mut finished_paths = Vec::new();
+    let initial_node = Node { name: "start".to_string(), parent: None, small_visited_twice: false };
+    let mut nodes = vec!(initial_node);
+    let mut node_indeces_in_progress = vec!(0);
+    let mut finished_node_indeces = Vec::new();
 
-    while paths_in_progress.len() > 0 {
-        let path = paths_in_progress.remove(0);
-        let permutations = permutate_path(edges, &path, can_visit_small_cave_twice);
+    while node_indeces_in_progress.len() > 0 {
+        let node_index = node_indeces_in_progress.remove(0);
+        let permutations = permutate_path(edges, &nodes, node_index, can_visit_small_cave_twice);
 
         for permutation in permutations {
-            match permutation.nodes.last().unwrap().as_str() {
-                "end" => finished_paths.push(permutation),
-                _ => paths_in_progress.push(permutation)
+            let new_index = nodes.len();
+
+            match permutation.name.as_str() {
+                "end" => finished_node_indeces.push(new_index),
+                _ => node_indeces_in_progress.push(new_index)
             }
+
+            nodes.push(permutation);
         }
     }
 
-    finished_paths.len()
+    finished_node_indeces.len()
 }
 
 fn part_one(edges: &Vec<Edge>) -> usize {
