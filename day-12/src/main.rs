@@ -55,7 +55,10 @@ fn permutate_path(edges: &Vec<Edge>, path: &Path, can_visit_small_cave_twice: bo
             let mut new_path = path.nodes.clone();
             new_path.push(node.clone());
 
-            let small_visited_twice = is_small_cave(node) && new_path.iter().filter(|&n| n == node).count() == 2;
+            let mut small_visited_twice = path.small_visited_twice;
+            if can_visit_small_cave_twice && !small_visited_twice {
+                small_visited_twice = is_small_cave(node) && new_path.iter().filter(|&n| n == node).count() == 2;
+            }
 
             Path { nodes: new_path, small_visited_twice: path.small_visited_twice || small_visited_twice }
         })
