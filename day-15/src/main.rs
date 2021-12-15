@@ -8,6 +8,36 @@ fn read_input(path: &str) -> Vec<usize> {
         .collect()
 }
 
+fn rot(i: usize) -> usize {
+    match i {
+        i if i > 9 => i - 9,
+        i => i
+    }
+}
+
+fn extend_map(map: &Vec<usize>, width: usize) -> Vec<usize> {
+    let mut extended_right_map = Vec::new();
+    let mut extended_map = Vec::new();
+
+    let initial_row_count = map.len() / width;
+
+    // Tile 5 times to the right
+    for y in 0..initial_row_count {
+        for copy in 0..5 {
+            for x in 0..width {
+                extended_right_map.push(rot(map[y * width + x] + copy));
+            }
+        }
+    }
+
+    // Tile 5 times down
+    for copy in 0..5 {
+        extended_right_map.iter().for_each(|i| extended_map.push(rot(*i + copy)));
+    }
+
+    extended_map
+}
+
 fn neighboring_indeces(index: usize, width: usize, size: usize) -> Vec<usize> {
     let mut neighbors = Vec::new();
 
@@ -20,13 +50,22 @@ fn neighboring_indeces(index: usize, width: usize, size: usize) -> Vec<usize> {
 }
 
 fn part_one(map: &Vec<usize>, width: usize) -> usize {
+    shortest_path_cost(map, width)
+}
+
+fn part_two(map: &Vec<usize>, width: usize) -> usize {
+    let extended = extend_map(map, width);
+    shortest_path_cost(&extended, width * 5)
+}
+
+fn shortest_path_cost(map: &Vec<usize>, width: usize) -> usize {
     let map_size = map.len();
     let destination = map_size - 1;
     let mut unvisited_indeces: Vec<usize> = (0..map_size).collect();
     let mut tentative_distances: Vec<usize> = (0..map_size).map(|_| usize::MAX).collect();
     tentative_distances[0] = 0;
 
-    loop {
+    while unvisited_indeces.len() > 0 {
         let (unvisited_index, &current_node_index) = unvisited_indeces
             .iter()
             .enumerate()
@@ -51,15 +90,24 @@ fn part_one(map: &Vec<usize>, width: usize) -> usize {
             }
         }
     }
+
+    panic!("Path not found")
 }
 
 fn main() {
     let map = read_input("input");
     println!("Day 5 Part One: {}", part_one(&map, 100));
+    println!("Day 5 Part Two: {}", part_two(&map, 100));
 }
 
 #[test]
 fn test_part_one() {
     let map = read_input("test");
     assert_eq!(part_one(&map, 10), 40);
+}
+
+#[test]
+fn test_part_two() {
+    let map = read_input("test");
+    assert_eq!(part_two(&map, 10), 315);
 }
