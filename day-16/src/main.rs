@@ -4,6 +4,7 @@ use std::fs;
 enum Packet {
     Operator {
         version: usize,
+        packet_type: usize,
         length_type_id: usize,
         contents: Vec<Packet>
     },
@@ -55,11 +56,19 @@ fn decode_hex(hex: char) -> Vec<usize> {
 }
 
 fn read_input(path: &str) -> Packet {
-    let binary: Vec<usize> = fs::read_to_string(path)
-        .expect("File path must be valid")
+    let file = fs::read_to_string(path)
+        .expect("File path must be valid");
+
+    let hex_string = file
         .lines()
         .next()
-        .unwrap()
+        .unwrap();
+
+    hex_to_packet(hex_string)
+}
+
+fn hex_to_packet(input: &str) -> Packet {
+    let binary: Vec<usize> = input
         .chars()
         .flat_map(|hex_char| decode_hex(hex_char))
         .collect();
@@ -75,7 +84,7 @@ fn binary_to_packet(binary: &[usize]) -> Packet {
             let (literal, length) = binary_to_literal(&binary[6..]);
             Packet::Literal { version, literal, length }
         },
-        _ => {
+        packet_type => {
             let length_type_id = binary[6];
             let mut contents = Vec::new();
 
@@ -110,7 +119,7 @@ fn binary_to_packet(binary: &[usize]) -> Packet {
                 _ => panic!()
             };
 
-            Packet::Operator { version, length_type_id, contents }
+            Packet::Operator { version, length_type_id, contents, packet_type }
         }
     }
 }
@@ -139,22 +148,55 @@ fn sum_versions(packet: &Packet) -> usize {
     }
 }
 
+fn compute_packets(packet: &Packet) -> usize {
+    match packet {
+        Packet::Operator { packet_type, contents, .. } =>
+            match packet_type {
+                0 => contents.iter().map(|p| compute_packets(p)).sum(),
+                1 => contents.iter().map(|p| compute_packets(p)).product(),
+                2 => contents.iter().map(|p| compute_packets(p)).min().unwrap(),
+                3 => contents.iter().map(|p| compute_packets(p)).max().unwrap(),
+                5 => if compute_packets(&contents[0]) > compute_packets(&contents[1]) { 1 } else { 0 },
+                6 => if compute_packets(&contents[0]) < compute_packets(&contents[1]) { 1 } else { 0 },
+                7 => if compute_packets(&contents[0]) == compute_packets(&contents[1]) { 1 } else { 0 }
+                _ => panic!()
+            }
+        Packet::Literal { literal, .. } => *literal
+    }
+}
+
 fn main() {
     let input = read_input("input");
     println!("Day 16 Part 1: {}", sum_versions(&input));
+    println!("Day 16 Part 1: {}", compute_packets(&input));
 }
 
 #[test]
 fn test_part_one() {
-    let input_one = read_input("test1");
-    assert_eq!(sum_versions(&input_one), 16);
+    fn version_assert(hex_string: &str, val: usize) {
+        let packet = hex_to_packet(hex_string);
+        assert_eq!(sum_versions(&packet), val);
+    }
 
-    let input_two = read_input("test2");
-    assert_eq!(sum_versions(&input_two), 12);
+    version_assert("8A004A801A8002F478", 16);
+    version_assert("620080001611562C8802118E34", 12);
+    version_assert("C0015000016115A2E0802F182340", 23);
+    version_assert("A0016C880162017C3686B18A3D4780", 31);
+}
 
-    let input_three = read_input("test3");
-    assert_eq!(sum_versions(&input_three), 23);
+#[test]
+fn test_part_two() {
+    fn compute_assert(hex_string: &str, val: usize) {
+        let packet = hex_to_packet(hex_string);
+        assert_eq!(compute_packets(&packet), val);
+    }
 
-    let input_four = read_input("test4");
-    assert_eq!(sum_versions(&input_four), 31);
+    compute_assert("C200B40A82", 3);
+    compute_assert("04005AC33890", 54);
+    compute_assert("880086C3E88112", 7);
+    compute_assert("CE00C43D881120", 9);
+    compute_assert("D8005AC2A8F0", 1);
+    compute_assert("F600BC2D8F", 0);
+    compute_assert("9C005AC2F8F0", 0);
+    compute_assert("9C0141080250320F1802104A08", 1);
 }
