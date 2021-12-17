@@ -89,7 +89,6 @@ fn iterate_and_diff(polymer: &Vec<char>, rules: &Rules, count: usize) -> usize {
         .min()
         .unwrap();
 
-
     (max - min) / 2
 }
 
