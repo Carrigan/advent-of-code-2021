@@ -26,6 +26,7 @@ fn read_input(path: &str) -> (Decoder, Image) {
     (decoder, image)
 }
 
+#[derive(Clone)]
 struct Image {
     marked: Vec<(i32, i32)>,
     background_dark: bool
@@ -70,15 +71,20 @@ fn process(image: Image, decoder: &Decoder) -> Image {
     new_image
 }
 
-fn part_one(image: Image, decoder: &Decoder) -> usize {
-    let processed_once = process(image, decoder);
-    let processed_twice = process(processed_once, decoder);
-    processed_twice.marked.len()
+fn part_one(mut image: Image, decoder: &Decoder) -> usize {
+    for _ in 0..2 { image = process(image, decoder); }
+    image.marked.len()
+}
+
+fn part_two(mut image: Image, decoder: &Decoder) -> usize {
+    for _ in 0..50 { image = process(image, decoder); }
+    image.marked.len()
 }
 
 fn main() {
     let (decoder, image) = read_input("input");
-    println!("Day 20 Part 1: {:?}", part_one(image, &decoder));
+    println!("Day 20 Part 1: {:?}", part_one(image.clone(), &decoder));
+    println!("Day 20 Part 2: {:?}", part_two(image, &decoder));
 }
 
 // < 5495
@@ -87,4 +93,10 @@ fn main() {
 fn test_part_one() {
     let (decoder, image) = read_input("test");
     assert_eq!(part_one(image, &decoder), 35);
+}
+
+#[test]
+fn test_part_two() {
+    let (decoder, image) = read_input("test");
+    assert_eq!(part_two(image, &decoder), 3351);
 }
